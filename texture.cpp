@@ -1,7 +1,7 @@
 #include "texture.h"
 
-static unsigned int texture;	// 2個以上管理したい場合は配列にする
-
+static unsigned int texture[2];	// 2個以上管理したい場合は配列にする
+static unsigned int count = 0;
 
 unsigned int LoadTexture(const char * filename)
 {
@@ -181,8 +181,8 @@ unsigned int LoadTexture(const char * filename)
 
 	
 	//　テクスチャ生成
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glGenTextures(1, &texture[count]);
+	glBindTexture(GL_TEXTURE_2D, texture[count]);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	//　くりかえし、サンプラーステート
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);	//　OpenGLでは、UV座標ではなく、ST座標。
@@ -209,12 +209,12 @@ unsigned int LoadTexture(const char * filename)
 	
 	glBindTexture(GL_TEXTURE_2D, NULL);	//　アンバインドする
 	delete[] pImage;
-
-	return texture;
+	count++;
+	return texture[count - 1];
 }
 
 void DeleteTexture(void){
-	glDeleteTextures(1, &texture);
+	glDeleteTextures(count, &texture[count]);
 }
 
 

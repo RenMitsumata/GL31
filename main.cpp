@@ -313,7 +313,10 @@ void Draw(void)
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex3f(100.0f, 400.0f, 0.0f);
 
+	glEnd();
+
 	glBindTexture(GL_TEXTURE_2D, Texture2);
+	glBegin(GL_TRIANGLE_STRIP);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glTexCoord2f(1.0f, 0.0f);
@@ -330,6 +333,8 @@ void Draw(void)
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex3f(500.0f, 550.0f, 0.0f);
+
+	glEnd();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
