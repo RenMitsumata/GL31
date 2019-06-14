@@ -58,6 +58,7 @@ static float g_FPS = 0.0f;              // FPS
 static HDC g_HDC = NULL;
 static HGLRC g_HGLRC = NULL;
 static GLuint Texture;
+static GLuint Texture2;
 
 /*------------------------------------------------------------------------------
    ä÷êîíËã`
@@ -246,7 +247,7 @@ bool Initialize(void)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	Texture = LoadTexture("asset/texture/kouya.tga");
-
+	Texture2 = LoadTexture("asset/texture/keion_bg.tga");
     return true;
 }
 
@@ -311,6 +312,24 @@ void Draw(void)
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex3f(100.0f, 400.0f, 0.0f);
+
+	glBindTexture(GL_TEXTURE_2D, Texture2);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(900.0f, 300.0f, 0.0f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(500.0f, 300.0f, 0.0f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(900.0f, 550.0f, 0.0f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(500.0f, 550.0f, 0.0f);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
