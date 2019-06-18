@@ -246,8 +246,8 @@ bool Initialize(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	Texture = LoadTexture("asset/texture/kouya.tga");
-	Texture2 = LoadTexture("asset/texture/keion_bg.tga");
+	Texture = LoadTexture("asset/texture/field004.tga");
+	Texture2 = LoadTexture("asset/texture/wall.tga");
     return true;
 }
 
@@ -280,7 +280,7 @@ void Draw(void)
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);	//　バックバッファのクリアの設定
 	glClearDepth(1.0f);	//　一番深いところで初期化
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//　ここでバックバッファがクリアされる
-
+	/*
 	// ライティングの無効化(2次元描画の時のみ)
 	glDisable(GL_LIGHTING);
 	// 2D行列変換（プロジェクション）
@@ -294,7 +294,7 @@ void Draw(void)
 	glBindTexture(GL_TEXTURE_2D, Texture);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	/*	ここから描画処理を書く  */
+	//	ここから描画処理を書く  
 
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -334,12 +334,122 @@ void Draw(void)
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex3f(500.0f, 550.0f, 0.0f);
 
-	glEnd();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	/*  描画処理終了　*/
+	// 描画処理終了　
 	glEnd();
+	glEnable(GL_LIGHTING);
+	*/
+	glDisable(GL_LIGHTING);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(60.0f,(SCREEN_WIDTH / (float)SCREEN_HEIGHT) , 1.0f, 600.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt(3.0f, 2.0f, 3.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+
+	glBindTexture(GL_TEXTURE_2D, Texture);
+	glBegin(GL_TRIANGLE_STRIP);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(10.0f, 0.0f);
+	glVertex3f(2.5f, 0.0f, -2.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(-2.5f, 0.0f, -2.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(10.0f, 10.0f);
+	glVertex3f(2.5f, 0.0f, 2.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 10.0f);
+	glVertex3f(-2.5f, 0.0f, 2.5f);
+	
+
+	// 描画処理終了　
+	glEnd();
+
+
+	glBindTexture(GL_TEXTURE_2D, Texture2);
+
+
+
+	for (int i = 0; i < 4; i++) {
+		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+		glBegin(GL_TRIANGLE_STRIP);
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(0.5f, 0.5f, -0.5f);
+
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(-0.5f, 0.5f, -0.5f);
+
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(0.5f, 0.5f, 0.5f);
+
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(-0.5f, 0.5f, 0.5f);
+		glEnd();
+	}
+
+	glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(-0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(0.5f, 0.5f, 0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(-0.5f, 0.5f, 0.5f);
+
+	glEnd();
+
+	glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(-0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(0.5f, 0.5f, 0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(-0.5f, 0.5f, 0.5f);
+
+	glEnd();
+
+
+
+	
+
+
+
+
+
+
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glEnable(GL_LIGHTING);
 
 	SwapBuffers(g_HDC);
