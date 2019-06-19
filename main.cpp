@@ -9,6 +9,7 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #include <Windows.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <math.h>
 #include "common.h"
 #include "system_timer.h"
 #include "texture.h"
@@ -410,7 +411,7 @@ void Draw(void)
 
 	// キューブのワールド座標変換
 	glTranslatef(-2.0f,0.5f,2.0f);
-	glRotatef(count, 0.0f, 1.0f, 0.0f);
+	glRotatef((count * 5.0f), 0.0f, 1.0f, 0.0f);
 	// キューブを描画
 	DrawCube();
 	
@@ -418,12 +419,49 @@ void Draw(void)
 	glPopMatrix();
 
 
+	//
+	//　②端で上下移動
+	//
+
 	// 行列をプッシュする
 	glPushMatrix();
 
 	// キューブのワールド座標変換
-	glTranslatef(-2.0f, 2.0f, -2.0f);
-	glRotatef(count, 1.0f, 0.0f, 0.0f);
+	glTranslatef(-2.0f, 1.5f + sinf(count / 8.0f), -2.0f);
+	// キューブを描画
+	DrawCube();
+
+	// 行列をポップする
+	glPopMatrix();
+
+	//
+	//　③端で拡大縮小
+	//
+
+	// 行列をプッシュする
+	glPushMatrix();
+
+	// キューブのワールド座標変換
+	glTranslatef(2.5f - (1.0f + sinf(count / 8.0f) / 2) / 2, (1.0f + sinf(count / 8.0f) / 2) / 2, -2.5f + (1.0f + sinf(count / 8.0f) / 2) / 2);
+	glScalef(1.0f + sinf(count / 8.0f) / 2, 1.0f + sinf(count / 8.0f) / 2, 1.0f + sinf(count / 8.0f) / 2);
+
+	// キューブを描画
+	DrawCube();
+
+	// 行列をポップする
+	glPopMatrix();
+
+	//
+	//　④回転しながら移動
+	//
+
+	// 行列をプッシュする
+	glPushMatrix();
+
+	// キューブのワールド座標変換
+	glTranslatef(cosf(count / 8.0f) * 1.5f,1.0f,sinf(count / 8.0f)* 1.5f);
+	glRotatef(count * 5, 1.0f, 1.0f, -1.0f);
+
 	// キューブを描画
 	DrawCube();
 
@@ -431,13 +469,11 @@ void Draw(void)
 	glPopMatrix();
 
 
-
-
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glEnable(GL_LIGHTING);
 
 	SwapBuffers(g_HDC);
-	   	  
+
 }
 
 // ゲームの終了処理
@@ -562,7 +598,7 @@ void DrawCube(void) {
 /*
 	課題02
 	・地面の端でその場回転
-	・地面の端で上下回転
+	・地面の端で上下移動
 	・地面の端で拡大縮小
 	・回転しながら移動
 */
