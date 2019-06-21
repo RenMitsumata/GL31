@@ -66,7 +66,10 @@ static float yPos;
 static float zPos;
 static float rotate;
 static int count;
-
+static const GLfloat lightCol[] = { 0.3f,0.3f,0.3f,1.0f };
+static const GLfloat lightPos[] = { 0.0f,10.0f,10.0f,0.0f };
+static const GLfloat lightDif[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat lightSpe[] = { 1.0f,1.0f,1.0f,1.0f };
 /*------------------------------------------------------------------------------
    関数定義
 ------------------------------------------------------------------------------*/
@@ -256,6 +259,15 @@ bool Initialize(void)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_LIGHTING);
+	
+	// ライトの設定
+	
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightCol);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDif);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpe);
+	glEnable(GL_LIGHT0);
+
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -356,7 +368,7 @@ void Draw(void)
 	glEnd();
 	glEnable(GL_LIGHTING);
 	*/
-	glDisable(GL_LIGHTING);
+	//glDisable(GL_LIGHT0);
 
 
 
@@ -370,25 +382,32 @@ void Draw(void)
 	// 行列をプッシュする
 	glPushMatrix();
 
-
+	
 	glBindTexture(GL_TEXTURE_2D, Texture);
 	glBegin(GL_TRIANGLE_STRIP);
-
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(10.0f, 0.0f);
 	glVertex3f(2.5f, 0.0f, -2.5f);
+	
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.0f, 0.0f);
 	glVertex3f(-2.5f, 0.0f, -2.5f);
+	
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(10.0f, 10.0f);
 	glVertex3f(2.5f, 0.0f, 2.5f);
+	
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.0f, 10.0f);
 	glVertex3f(-2.5f, 0.0f, 2.5f);
+	
 	
 
 	// 描画処理終了　
@@ -459,7 +478,7 @@ void Draw(void)
 	glPushMatrix();
 
 	// キューブのワールド座標変換
-	glTranslatef(cosf(count / 8.0f) * 1.5f,1.0f,sinf(count / 8.0f)* 1.5f);
+	glTranslatef(cosf(count / 10.0f) * 1.0f,1.0f,sinf(count / 10.0f)* 1.0f);
 	glRotatef(count * 5, 1.0f, 1.0f, -1.0f);
 
 	// キューブを描画
@@ -470,7 +489,7 @@ void Draw(void)
 
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-	glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHT0);
 
 	SwapBuffers(g_HDC);
 
@@ -500,19 +519,24 @@ void DrawCube(void) {
 	for (int i = 0; i < 4; i++) {
 		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
 		glBegin(GL_TRIANGLE_STRIP);
+
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f((i+1)*0.25f, 0.33f);
 		glVertex3f(0.5f, 0.5f, -0.5f);
 
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f(i*0.25f, 0.33f);
 		glVertex3f(-0.5f, 0.5f, -0.5f);
 
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f((i + 1)*0.25f, 0.66f);
 		glVertex3f(0.5f, 0.5f, 0.5f);
 
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f(i*0.25f, 0.66f);
 		glVertex3f(-0.5f, 0.5f, 0.5f);
 		glEnd();
@@ -522,18 +546,22 @@ void DrawCube(void) {
 	glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 0.0f);
 	glVertex3f(0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 0.0f);
 	glVertex3f(-0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 0.33f);
 	glVertex3f(0.5f, 0.5f, 0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 0.33f);
 	glVertex3f(-0.5f, 0.5f, 0.5f);
 
@@ -542,18 +570,22 @@ void DrawCube(void) {
 	glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 0.66f);
 	glVertex3f(0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 0.66f);
 	glVertex3f(-0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 1.0f);
 	glVertex3f(0.5f, 0.5f, 0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 1.0f);
 	glVertex3f(-0.5f, 0.5f, 0.5f);
 
@@ -601,4 +633,11 @@ void DrawCube(void) {
 	・地面の端で上下移動
 	・地面の端で拡大縮小
 	・回転しながら移動
+*/
+
+/*
+	ライトの設定
+	ライトの座標、アンビエント・ディフューズ・スペキュラ
+	W座標に0:疑似的平行光源
+	　　　 1:点光源
 */
