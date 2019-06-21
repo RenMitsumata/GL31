@@ -9,6 +9,7 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #include <Windows.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <math.h>
 #include "common.h"
 #include "system_timer.h"
 #include "texture.h"
@@ -44,8 +45,8 @@ static void Update(void);
 static void Draw(void);
 // ゲームの終了処理
 static void Finalize(void);
-
-
+// キューブの描画処理
+static void DrawCube(void);
 /*------------------------------------------------------------------------------
    グローバル変数宣言
 ------------------------------------------------------------------------------*/
@@ -59,6 +60,12 @@ static HDC g_HDC = NULL;
 static HGLRC g_HGLRC = NULL;
 static GLuint Texture;
 static GLuint Texture2;
+static GLuint Texture3;
+static float xPos;
+static float yPos;
+static float zPos;
+static float rotate;
+static int count;
 
 /*------------------------------------------------------------------------------
    関数定義
@@ -134,6 +141,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         // ゲームの初期化に失敗した
 		return -1;
 	}
+
+
+	xPos = 0.0f;
+	yPos = 0.0f;
+	zPos = 0.0f;
+	rotate = 0.0f;
+	count = 0;
 
     // Windowsゲーム用メインループ
     MSG msg = {}; // msg.message == WM_NULL
@@ -246,8 +260,9 @@ bool Initialize(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	Texture = LoadTexture("asset/texture/kouya.tga");
-	Texture2 = LoadTexture("asset/texture/keion_bg.tga");
+	Texture = LoadTexture("asset/texture/field004.tga");
+	Texture2 = LoadTexture("asset/texture/wall.tga");
+	Texture3 = LoadTexture("asset/texture/dice.tga");
     return true;
 }
 
@@ -271,7 +286,7 @@ void Update(void)
 		g_FPSBaseFrameCount = g_FrameCount;
 	}
 
-	
+	count++;
 }
 
 // ゲームの描画関数
@@ -280,7 +295,7 @@ void Draw(void)
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);	//　バックバッファのクリアの設定
 	glClearDepth(1.0f);	//　一番深いところで初期化
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//　ここでバックバッファがクリアされる
-
+	/*
 	// ライティングの無効化(2次元描画の時のみ)
 	glDisable(GL_LIGHTING);
 	// 2D行列変換（プロジェクション）
@@ -294,7 +309,7 @@ void Draw(void)
 	glBindTexture(GL_TEXTURE_2D, Texture);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	/*	ここから描画処理を書く  */
+	//	ここから描画処理を書く  
 
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -313,7 +328,10 @@ void Draw(void)
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex3f(100.0f, 400.0f, 0.0f);
 
+	glEnd();
+
 	glBindTexture(GL_TEXTURE_2D, Texture2);
+	glBegin(GL_TRIANGLE_STRIP);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glTexCoord2f(1.0f, 0.0f);
@@ -331,14 +349,131 @@ void Draw(void)
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex3f(500.0f, 550.0f, 0.0f);
 
+
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	/*  描画処理終了　*/
+	// 描画処理終了　
 	glEnd();
+	glEnable(GL_LIGHTING);
+	*/
+	glDisable(GL_LIGHTING);
+
+
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(60.0f,(SCREEN_WIDTH / (float)SCREEN_HEIGHT) , 1.0f, 600.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt(0.0f, 3.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+	// 行列をプッシュする
+	glPushMatrix();
+
+
+	glBindTexture(GL_TEXTURE_2D, Texture);
+	glBegin(GL_TRIANGLE_STRIP);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(10.0f, 0.0f);
+	glVertex3f(2.5f, 0.0f, -2.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(-2.5f, 0.0f, -2.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(10.0f, 10.0f);
+	glVertex3f(2.5f, 0.0f, 2.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.0f, 10.0f);
+	glVertex3f(-2.5f, 0.0f, 2.5f);
+	
+
+	// 描画処理終了　
+	glEnd();
+
+	// 行列をポップする
+	glPopMatrix();
+
+
+	//-----ここからキューブの描画処理-----//
+	glBindTexture(GL_TEXTURE_2D, Texture3);
+	  
+
+	//
+	//　①端でぐるぐる
+	//
+
+	// 行列をプッシュする
+	glPushMatrix();
+
+	// キューブのワールド座標変換
+	glTranslatef(-2.0f,0.5f,2.0f);
+	glRotatef((count * 5.0f), 0.0f, 1.0f, 0.0f);
+	// キューブを描画
+	DrawCube();
+	
+	// 行列をポップする
+	glPopMatrix();
+
+
+	//
+	//　②端で上下移動
+	//
+
+	// 行列をプッシュする
+	glPushMatrix();
+
+	// キューブのワールド座標変換
+	glTranslatef(-2.0f, 1.5f + sinf(count / 8.0f), -2.0f);
+	// キューブを描画
+	DrawCube();
+
+	// 行列をポップする
+	glPopMatrix();
+
+	//
+	//　③端で拡大縮小
+	//
+
+	// 行列をプッシュする
+	glPushMatrix();
+
+	// キューブのワールド座標変換
+	glTranslatef(2.5f - (1.0f + sinf(count / 8.0f) / 2) / 2, (1.0f + sinf(count / 8.0f) / 2) / 2, -2.5f + (1.0f + sinf(count / 8.0f) / 2) / 2);
+	glScalef(1.0f + sinf(count / 8.0f) / 2, 1.0f + sinf(count / 8.0f) / 2, 1.0f + sinf(count / 8.0f) / 2);
+
+	// キューブを描画
+	DrawCube();
+
+	// 行列をポップする
+	glPopMatrix();
+
+	//
+	//　④回転しながら移動
+	//
+
+	// 行列をプッシュする
+	glPushMatrix();
+
+	// キューブのワールド座標変換
+	glTranslatef(cosf(count / 8.0f) * 1.5f,1.0f,sinf(count / 8.0f)* 1.5f);
+	glRotatef(count * 5, 1.0f, 1.0f, -1.0f);
+
+	// キューブを描画
+	DrawCube();
+
+	// 行列をポップする
+	glPopMatrix();
+
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glEnable(GL_LIGHTING);
 
 	SwapBuffers(g_HDC);
-	   	  
+
 }
 
 // ゲームの終了処理
@@ -351,3 +486,119 @@ void Finalize(void)
 	wglDeleteContext(g_HGLRC);
 
 }
+
+
+
+
+
+
+
+
+
+void DrawCube(void) {
+	glPushMatrix();
+	for (int i = 0; i < 4; i++) {
+		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+		glBegin(GL_TRIANGLE_STRIP);
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f((i+1)*0.25f, 0.33f);
+		glVertex3f(0.5f, 0.5f, -0.5f);
+
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f(i*0.25f, 0.33f);
+		glVertex3f(-0.5f, 0.5f, -0.5f);
+
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f((i + 1)*0.25f, 0.66f);
+		glVertex3f(0.5f, 0.5f, 0.5f);
+
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glTexCoord2f(i*0.25f, 0.66f);
+		glVertex3f(-0.5f, 0.5f, 0.5f);
+		glEnd();
+	}
+	glPopMatrix();
+
+	glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.5f, 0.0f);
+	glVertex3f(0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.25f, 0.0f);
+	glVertex3f(-0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.5f, 0.33f);
+	glVertex3f(0.5f, 0.5f, 0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.25f, 0.33f);
+	glVertex3f(-0.5f, 0.5f, 0.5f);
+
+	glEnd();
+
+	glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.5f, 0.66f);
+	glVertex3f(0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.25f, 0.66f);
+	glVertex3f(-0.5f, 0.5f, -0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.5f, 1.0f);
+	glVertex3f(0.5f, 0.5f, 0.5f);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glTexCoord2f(0.25f, 1.0f);
+	glVertex3f(-0.5f, 0.5f, 0.5f);
+
+	glEnd();
+
+}
+
+
+/*
+　行列スタック
+ 　glLoad～　スタックをクリアし、1番上に行列を積む
+   gluLookat
+   gluPerspective
+   glTranslatef
+   glRotatef
+   glScalef
+   glMultiMatrixf
+
+   カレントの移動
+   glPushMatrix()
+   カレントをコピーして下へ
+   glPopMatrix()
+   カレントを上へ
+
+   glMatrixModeがMODELVIEWとProjectionに分かれている→スタックが別
+
+   ①単位行列を作る
+   glMatrixIdentity();
+   ②ビュー行列を作る
+   glLookAt();
+   ③プッシュする
+   glPushMatrix();
+   ④一つの描画が終わったらポップを呼ぶ
+   glPopMatrix();
+   イメージとしては
+   ビュー行列をコピー＆カレント移動→キューブを描画→ポップでキューブ描画用の行列はｲﾗﾈ
+   →ビュー行列が残ってるから再利用できる！→またプッシュして…を繰り返し
+   モデルの親子構造も作りやすい！
+
+*/
+
+/*
+	課題02
+	・地面の端でその場回転
+	・地面の端で上下移動
+	・地面の端で拡大縮小
+	・回転しながら移動
+*/
