@@ -13,6 +13,7 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #include "common.h"
 #include "system_timer.h"
 #include "texture.h"
+#include <map>
 
 #if WIN32
 #pragma comment (lib,"OpenGL32.lib")
@@ -28,7 +29,6 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #define CLASS_NAME     "GameWindow"       // ウインドウクラスの名前
 #define WINDOW_CAPTION "ゲームウィンドウ" // ウィンドウの名前
 #define FPS_MEASUREMENT_TIME (1.0f)       // FPS計測時間
-
 
 /*------------------------------------------------------------------------------
    プロトタイプ宣言
@@ -70,6 +70,13 @@ static const GLfloat lightCol[] = { 0.3f,0.3f,0.3f,1.0f };
 static const GLfloat lightPos[] = { 0.0f,10.0f,10.0f,0.0f };
 static const GLfloat lightDif[] = { 1.0f,1.0f,1.0f,1.0f };
 static const GLfloat lightSpe[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat matDif[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat matCol[] = { 0.0f,1.0f,1.0f,1.0f };
+static const GLfloat matSpe[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat matEmi[] = { 0.0f,0.0f,0.0f,0.0f };	// エミッシブ：自己発光　普段は０
+static const GLfloat matShi = 0.0f;
+std::map<char, GLfloat> CameraEye;
+
 /*------------------------------------------------------------------------------
    関数定義
 ------------------------------------------------------------------------------*/
@@ -255,6 +262,7 @@ bool Initialize(void)
 	wglMakeCurrent(g_HDC, g_HGLRC);
 
 	// OpenGLの描画設定
+	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -268,13 +276,22 @@ bool Initialize(void)
 	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpe);
 	glEnable(GL_LIGHT0);
 
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matCol);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDif);
+	//glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matSpe);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, matShi);
+	glEnable(GL_FRONT_AND_BACK);
+	
+	
+
+
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	Texture = LoadTexture("asset/texture/field004.tga");
-	Texture2 = LoadTexture("asset/texture/wall.tga");
-	Texture3 = LoadTexture("asset/texture/dice.tga");
+	Texture = LoadTexture("asset/texture/BG_Space.jpg",FILETYPE_JPEG);
+	Texture2 = LoadTexture("asset/texture/wall.tga", FILETYPE_TGA);
+	Texture3 = LoadTexture("asset/texture/dice.tga", FILETYPE_TGA);
     return true;
 }
 
@@ -297,6 +314,9 @@ void Update(void)
 		g_FPSBaseTime = time;
 		g_FPSBaseFrameCount = g_FrameCount;
 	}
+	CameraEye['X'] += 0.0f;
+
+
 
 	count++;
 }
@@ -370,13 +390,16 @@ void Draw(void)
 	*/
 	//glDisable(GL_LIGHT0);
 
-
+	// ビューポート
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(60.0f,(SCREEN_WIDTH / (float)SCREEN_HEIGHT) , 1.0f, 600.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+
 	gluLookAt(0.0f, 3.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
 	// 行列をプッシュする

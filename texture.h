@@ -16,7 +16,14 @@
 #pragma comment (lib,"GLU64.lib")
 #endif
 
-unsigned int LoadTexture(const char* filename);
+enum FILETYPE {
+	FILETYPE_TGA = 0,
+	FILETYPE_PNG,
+	FILETYPE_JPEG
+};
+
+
+unsigned int LoadTexture(const char* filename, unsigned int e_FILETYPE);
 void DeleteTexture(void);
 
 #endif
