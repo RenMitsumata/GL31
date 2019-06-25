@@ -14,10 +14,16 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #include "system_timer.h"
 #include "texture.h"
 #include <map>
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/matrix4x4.h>
+
 
 #if WIN32
 #pragma comment (lib,"OpenGL32.lib")
 #pragma comment (lib,"GLU32.lib")
+#pragma comment (lib,"assimp.lib")
 #else
 #pragma comment (lib,"OpenGL64.lib")
 #pragma comment (lib,"GLU64.lib")
@@ -76,7 +82,7 @@ static const GLfloat matSpe[] = { 1.0f,1.0f,1.0f,1.0f };
 static const GLfloat matEmi[] = { 0.0f,0.0f,0.0f,0.0f };	// エミッシブ：自己発光　普段は０
 static const GLfloat matShi = 0.0f;
 std::map<char, GLfloat> CameraEye;
-
+static const aiScene* g_pScene = nullptr;
 /*------------------------------------------------------------------------------
    関数定義
 ------------------------------------------------------------------------------*/
@@ -282,8 +288,11 @@ bool Initialize(void)
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, matShi);
 	glEnable(GL_FRONT_AND_BACK);
 	
-	
-
+	g_pScene = aiImportFile("asset/model/monkey.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	if (g_pScene == nullptr) {
+		MessageBox(g_hWnd, "モデルファイルが読み込めません", "Assimp", MB_OK | MB_ICONHAND);
+		exit(1);
+	}
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
@@ -316,7 +325,8 @@ void Update(void)
 	}
 	CameraEye['X'] += 0.0f;
 
-
+	CameraEye['Y'] += 0.0f;
+	
 
 	count++;
 }
@@ -401,6 +411,13 @@ void Draw(void)
 
 
 	gluLookAt(0.0f, 3.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+	g_pScene->
+
+
+
+
+
 
 	// 行列をプッシュする
 	glPushMatrix();
@@ -521,6 +538,9 @@ void Draw(void)
 // ゲームの終了処理
 void Finalize(void)
 {
+	if (g_pScene != nullptr) {
+		aiReleaseImport(g_pScene);
+	}
 	// OpenGLの後かたずけ
 	DeleteTexture();
 	wglMakeCurrent(NULL, NULL);
