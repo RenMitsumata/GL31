@@ -1,18 +1,25 @@
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb-master/stb_image.h"
+
 #include "texture.h"
+
+
 
 static unsigned int texture[3];	// 2個以上管理したい場合は配列にする
 static unsigned int count = 0;
 
-unsigned int LoadTexture(const char * filename)
+
+
+unsigned int LoadTexture(const char * filename, unsigned int e_FILETYPE)
 {
-	FILE* fp = fopen(filename, "rb");
-	if (fp == NULL) { return 0xFFFFFFFF; }
+	
 	unsigned char* pImage;
 
 	// tgaファイル
-	
-	{
-
+	if (e_FILETYPE == FILETYPE_TGA) {
+		FILE* fp = fopen(filename, "rb");
+		if (fp == NULL) { return 0xFFFFFFFF; }
 		unsigned char header[18];
 		fread(header, sizeof(header), 1, fp);
 
@@ -214,49 +221,37 @@ unsigned int LoadTexture(const char * filename)
 		}
 
 		glBindTexture(GL_TEXTURE_2D, NULL);	//　アンバインドする
-
-
+		delete[] pImage;
 	}
-
+	
 	// pngファイル
-	int width;
-	int height;
-	/*
-	if("png"){
-		char trashBuffer[8];
-		//　シグネチャを呼びとばす
-		fgets(trashBuffer, 8, fp);
-
-		// ここからはチャンクを読み込む
-		while (1) {
-			// まずはデータのサイズを読み込む
-			unsigned int filesize;
-			fread(&filesize, sizeof(unsigned int), 1, fp);
-			// 次に、このチャンクの種類を読み込む
-			char chunktype[4];
-			fread(chunktype, sizeof(char), 4,fp);
-			if (strcmp(chunktype, "IHDR") == 0) {
-				// IHDRチャンクの時の処理
-				fread(&width, sizeof(int), 1, fp);
-				fread(&height, sizeof(int), 1, fp);
-
-
-			}
-			else if (strcmp(chunktype, "PLTE") == 0){
-				// PLTEチャンクの時の処理
-			}
-			else if (strcmp(chunktype, "IDAT") == 0) {
-				// IDATチャンクの時の処理
-			}
-			else if (strcmp(chunktype, "IEND") == 0) {
-				// このファイルは終わり。
-				fclose(fp);
-			}
+	if ((e_FILETYPE == FILETYPE_PNG) || (e_FILETYPE == FILETYPE_JPEG)){
+		int width;
+		int height;
+		int bpp;
+		pImage = stbi_load(filename, &width, &height, &bpp, 0);
+		
+		//　テクスチャ生成
+		glGenTextures(1, &texture[count]);
+		glBindTexture(GL_TEXTURE_2D, texture[count]);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	//　くりかえし、サンプラーステート
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);	//　OpenGLでは、UV座標ではなく、ST座標。
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	//　この関数は、ターゲット、何を設定する？、設定したい値の順
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		if (bpp == 4) {
+			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pImage);
 		}
+		else {
+			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, pImage);
+		}
+		
+		stbi_image_free(pImage);
+		
+		glBindTexture(GL_TEXTURE_2D, NULL);	//　アンバインドする
 	}
-	*/
-
-	delete[] pImage;
+	
+	
 	count++;
 	return texture[count - 1];
 

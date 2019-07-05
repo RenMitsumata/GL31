@@ -10,13 +10,23 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <math.h>
+#include <string>
 #include "common.h"
 #include "system_timer.h"
 #include "texture.h"
+#include "input.h"
+#include <map>
+#include <vector>
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/matrix4x4.h>
+
 
 #if WIN32
 #pragma comment (lib,"OpenGL32.lib")
 #pragma comment (lib,"GLU32.lib")
+#pragma comment (lib,"assimp.lib")
 #else
 #pragma comment (lib,"OpenGL64.lib")
 #pragma comment (lib,"GLU64.lib")
@@ -28,7 +38,6 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #define CLASS_NAME     "GameWindow"       // ウインドウクラスの名前
 #define WINDOW_CAPTION "ゲームウィンドウ" // ウィンドウの名前
 #define FPS_MEASUREMENT_TIME (1.0f)       // FPS計測時間
-
 
 /*------------------------------------------------------------------------------
    プロトタイプ宣言
@@ -47,6 +56,10 @@ static void Draw(void);
 static void Finalize(void);
 // キューブの描画処理
 static void DrawCube(void);
+
+static void DrawMesh(const aiScene* pScene);
+
+
 /*------------------------------------------------------------------------------
    グローバル変数宣言
 ------------------------------------------------------------------------------*/
@@ -66,7 +79,26 @@ static float yPos;
 static float zPos;
 static float rotate;
 static int count;
+static const GLfloat lightCol[] = { 0.3f,0.3f,0.3f,1.0f };
+static const GLfloat lightPos[] = { 0.0f,10.0f,10.0f,0.0f };
+static const GLfloat lightDif[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat lightSpe[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat matDif[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat matCol[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat matSpe[] = { 1.0f,1.0f,1.0f,1.0f };
+static const GLfloat matEmi[] = { 0.0f,0.0f,0.0f,0.0f };	// エミッシブ：自己発光　普段は０
+static const GLfloat matShi = 0.0f;
+std::map<char, GLfloat> CameraEye;
+static const aiScene* g_pScene = nullptr;
+static GLuint* texture;
+static bool readOnce;
+static bool harinezumi;
+struct normalList {
+	aiVector3D normalVec;
+	aiVector3D pos;
+};
 
+static std::vector<normalList> _Normallist;
 /*------------------------------------------------------------------------------
    関数定義
 ------------------------------------------------------------------------------*/
@@ -141,7 +173,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         // ゲームの初期化に失敗した
 		return -1;
 	}
-
+	readOnce = false;
 
 	xPos = 0.0f;
 	yPos = 0.0f;
@@ -252,24 +284,76 @@ bool Initialize(void)
 	wglMakeCurrent(g_HDC, g_HGLRC);
 
 	// OpenGLの描画設定
+	glEnable(GL_NORMALIZE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_LIGHTING);
+	
+	// ライトの設定
+	
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightCol);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDif);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpe);
+	glEnable(GL_LIGHT0);
+
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matCol);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDif);
+	//glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matSpe);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, matShi);
+	glEnable(GL_FRONT_AND_BACK);
+	
+//g_pScene = aiImportFile("asset/model/Pronama-chan_Ver3/FBX(Ver.3)/PronamaChan.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/test.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/AC Cobra/Shelby.obj", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/tank/tank.x", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/coaster.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	g_pScene = aiImportFile("asset/model/dragon/Dragon 2.5_fbx.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	
+	if (g_pScene == nullptr) {
+		MessageBox(g_hWnd, "モデルファイルが読み込めません", "Assimp", MB_OK | MB_ICONHAND);
+		exit(1);
+	}
+
+	int material = g_pScene->mNumMaterials;
+	texture = new GLuint[material];
+
+	for (int i = 0; i < material; i++) {
+		aiString path;
+		
+
+		g_pScene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &path);
+		// マテリアルに画像がある
+		std::string texPath = path.data;
+		size_t pos = texPath.find_last_of("\\/");
+		std::string headerPath = texPath.substr(0, pos + 1);
+		headerPath += path.data;
+		texPath.c_str();	// stringの先頭アドレスを取得できる
+		texture[i] = LoadTexture(headerPath.c_str(), 2);
+	}
+	
+	/*
+		unorderedmap
+	
+	*/
+
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	Texture = LoadTexture("asset/texture/field004.tga");
-	Texture2 = LoadTexture("asset/texture/wall.tga");
-	Texture3 = LoadTexture("asset/texture/dice.tga");
+	Texture = LoadTexture("asset/texture/BG_Space.jpg",FILETYPE_JPEG);
+	Texture2 = LoadTexture("asset/texture/wall.tga", FILETYPE_TGA);
+	Texture3 = LoadTexture("asset/texture/dice.tga", FILETYPE_TGA);
+	CInput::Init();
+	harinezumi = false;
     return true;
 }
 
 // ゲームの更新関数
 void Update(void)
 {
-
+	CInput::Update();
 	// フレームカウントの更新
 	g_FrameCount++;
 
@@ -284,6 +368,17 @@ void Update(void)
 		// FPS計測の基となる変数の更新
 		g_FPSBaseTime = time;
 		g_FPSBaseFrameCount = g_FrameCount;
+	}
+	CameraEye['X'] += 0.0f;
+
+	CameraEye['Y'] += 0.0f;
+	
+
+	if (CInput::GetKeyTrigger('N')) {
+		if (harinezumi) {
+			harinezumi = false;
+		}
+		else harinezumi = true;
 	}
 
 	count++;
@@ -356,39 +451,61 @@ void Draw(void)
 	glEnd();
 	glEnable(GL_LIGHTING);
 	*/
-	glDisable(GL_LIGHTING);
+	//glDisable(GL_LIGHT0);
 
-
+	// ビューポート
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(60.0f,(SCREEN_WIDTH / (float)SCREEN_HEIGHT) , 1.0f, 600.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0.0f, 3.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
+
+	gluLookAt(0.0f,50.0f, 50.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.7f, -0.7f);
+
+
+	
+
+
+	
+	
+
+
+	
+
+
 
 	// 行列をプッシュする
 	glPushMatrix();
 
-
+	
 	glBindTexture(GL_TEXTURE_2D, Texture);
 	glBegin(GL_TRIANGLE_STRIP);
-
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(10.0f, 0.0f);
 	glVertex3f(2.5f, 0.0f, -2.5f);
+	
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.0f, 0.0f);
 	glVertex3f(-2.5f, 0.0f, -2.5f);
+	
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(10.0f, 10.0f);
 	glVertex3f(2.5f, 0.0f, 2.5f);
+	
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.0f, 10.0f);
 	glVertex3f(-2.5f, 0.0f, 2.5f);
+	
 	
 
 	// 描画処理終了　
@@ -459,7 +576,7 @@ void Draw(void)
 	glPushMatrix();
 
 	// キューブのワールド座標変換
-	glTranslatef(cosf(count / 8.0f) * 1.5f,1.0f,sinf(count / 8.0f)* 1.5f);
+	glTranslatef(cosf(count / 10.0f) * 1.0f,1.0f,sinf(count / 10.0f)* 1.0f);
 	glRotatef(count * 5, 1.0f, 1.0f, -1.0f);
 
 	// キューブを描画
@@ -469,8 +586,39 @@ void Draw(void)
 	glPopMatrix();
 
 
+	// 行列の面倒
+
+	// メッシュの面倒
+
+	// マテリアルの面倒
+
+
+
+	DrawMesh(g_pScene);
+	
+	
+	// ハリネズミ
+	if (harinezumi) {
+
+		glPushMatrix();
+		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+		glBegin(GL_LINES);
+		for (normalList nrm : _Normallist) {
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+			glNormal3f(0.0f, 0.0f, 1.0f);
+			glVertex3f(nrm.pos.x, nrm.pos.y, nrm.pos.z);
+
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+			glNormal3f(0.0f, 0.0f, 1.0f);
+			glVertex3f(nrm.pos.x + nrm.normalVec.x * 3.0f, nrm.pos.y + nrm.normalVec.y * 3.0f, nrm.pos.z + nrm.normalVec.z * 3.0f);
+		}
+		glEnd();
+		glPopMatrix();
+
+	}
+
 	glBindTexture(GL_TEXTURE_2D, 0);
-	glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHT0);
 
 	SwapBuffers(g_HDC);
 
@@ -479,6 +627,10 @@ void Draw(void)
 // ゲームの終了処理
 void Finalize(void)
 {
+	CInput::Uninit();
+	if (g_pScene != nullptr) {
+		aiReleaseImport(g_pScene);
+	}
 	// OpenGLの後かたずけ
 	DeleteTexture();
 	wglMakeCurrent(NULL, NULL);
@@ -500,19 +652,24 @@ void DrawCube(void) {
 	for (int i = 0; i < 4; i++) {
 		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
 		glBegin(GL_TRIANGLE_STRIP);
+
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f((i+1)*0.25f, 0.33f);
 		glVertex3f(0.5f, 0.5f, -0.5f);
 
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f(i*0.25f, 0.33f);
 		glVertex3f(-0.5f, 0.5f, -0.5f);
 
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f((i + 1)*0.25f, 0.66f);
 		glVertex3f(0.5f, 0.5f, 0.5f);
 
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		glNormal3f(0.0f, 1.0f, 0.0f);
 		glTexCoord2f(i*0.25f, 0.66f);
 		glVertex3f(-0.5f, 0.5f, 0.5f);
 		glEnd();
@@ -522,18 +679,22 @@ void DrawCube(void) {
 	glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 0.0f);
 	glVertex3f(0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 0.0f);
 	glVertex3f(-0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 0.33f);
 	glVertex3f(0.5f, 0.5f, 0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 0.33f);
 	glVertex3f(-0.5f, 0.5f, 0.5f);
 
@@ -542,24 +703,122 @@ void DrawCube(void) {
 	glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 0.66f);
 	glVertex3f(0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 0.66f);
 	glVertex3f(-0.5f, 0.5f, -0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.5f, 1.0f);
 	glVertex3f(0.5f, 0.5f, 0.5f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	glNormal3f(0.0f, 1.0f, 0.0f);
 	glTexCoord2f(0.25f, 1.0f);
 	glVertex3f(-0.5f, 0.5f, 0.5f);
 
 	glEnd();
 
 }
+
+
+
+void DrawMesh(const aiScene* pScene) {
+	void DrawChildrens(aiNode* pNode, const aiScene* pScene);
+
+	aiNode* pNode = g_pScene->mRootNode;			// ルートノード（一番上の親パーツ）を取ってくる
+	glPushMatrix();
+	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+	//glScalef(1.0f, 3.0f, 1.0f);
+	//glRotatef(270.0f, 0.0f, 1.0f, 0.0f);
+	//glTranslatef(0.0f, 3.0f, 3.0f);
+	
+
+	glBegin(GL_TRIANGLES);
+	
+
+	DrawChildrens(pNode,pScene);
+
+	glEnd();
+	aiMatrix4x4 matrix = pNode->mTransformation;	// 行列（位置）を取ってくる
+	aiTransposeMatrix4(&matrix);					// 行列を転置する(DirectX(左手系)->openGL(右手系))
+	glMultMatrixf((float*)&matrix);					// 行列をfloatに
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matCol);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDif);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, matShi);
+	glPopMatrix();
+	readOnce = true;
+}
+
+void DrawChildrens(aiNode* pNode, const aiScene* g_pScene) {
+	glPushMatrix();
+	aiMatrix4x4 matrix = pNode->mTransformation;	// 行列（位置）を取ってくる
+	aiTransposeMatrix4(&matrix);					// 行列を転置する(DirectX(左手系)->openGL(右手系))
+	
+	glMultMatrixf((float*)&matrix);					// 行列をfloatに
+	for (int n = 0; n < pNode->mNumChildren; n++) {
+		DrawChildrens(pNode->mChildren[n], g_pScene);
+	}
+	for (int n = 0; n < pNode->mNumMeshes; n++) {
+		const aiMesh* pMesh = g_pScene->mMeshes[pNode->mMeshes[n]];
+		const aiMaterial* mat = g_pScene->mMaterials[pMesh->mMaterialIndex];
+
+		glBindTexture(GL_TEXTURE_2D, texture[pMesh->mMaterialIndex]);
+		aiColor4D diffuse;
+		
+		aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE, &diffuse);
+		GLfloat glDiffuse[] = { diffuse.r,diffuse.g,diffuse.b,diffuse.a };
+		
+		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, (float*)glDiffuse);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, (float*)glDiffuse);
+		
+
+
+		for (int fn = 0; fn < pMesh->mNumFaces; fn++) {
+			const aiFace* pFace = &pMesh->mFaces[fn];
+			for (int i = 0; i < pFace->mNumIndices; i++) {
+				int index = pFace->mIndices[i];
+				
+				
+
+				glColor4f(glDiffuse[0],glDiffuse[1],glDiffuse[2],glDiffuse[3]);
+				glNormal3f(pMesh->mNormals[index].x, pMesh->mNormals[index].y, pMesh->mNormals[index].z);
+				
+				
+				if (pMesh->HasTextureCoords(0)) {
+					glTexCoord2f(pMesh->mTextureCoords[0][index].x, pMesh->mTextureCoords[0][index].y);	// １頂点に複数のtexcoordを持っているなら、forで回す
+				}
+
+				glVertex3f(pMesh->mVertices[index].x, pMesh->mVertices[index].y, pMesh->mVertices[index].z);
+				
+
+				if (!readOnce) {
+
+					normalList pushlist = {
+					aiVector3D({ pMesh->mNormals[index].x, pMesh->mNormals[index].y, pMesh->mNormals[index].z }),
+					aiVector3D({pMesh->mVertices[index].x, pMesh->mVertices[index].y, pMesh->mVertices[index].z})
+
+					};
+					_Normallist.push_back(pushlist);
+				}
+				
+			}
+		}
+
+	}
+	glPopMatrix();
+}
+/*
+	マテリアル情報はaiSceneのaiMeshごと
+
+*/
+
 
 
 /*
@@ -601,4 +860,11 @@ void DrawCube(void) {
 	・地面の端で上下移動
 	・地面の端で拡大縮小
 	・回転しながら移動
+*/
+
+/*
+	ライトの設定
+	ライトの座標、アンビエント・ディフューズ・スペキュラ
+	W座標に0:疑似的平行光源
+	　　　 1:点光源
 */
