@@ -14,7 +14,9 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #include "common.h"
 #include "system_timer.h"
 #include "texture.h"
+#include "input.h"
 #include <map>
+#include <vector>
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -88,7 +90,15 @@ static const GLfloat matEmi[] = { 0.0f,0.0f,0.0f,0.0f };	// エミッシブ：自己発光
 static const GLfloat matShi = 0.0f;
 std::map<char, GLfloat> CameraEye;
 static const aiScene* g_pScene = nullptr;
-static aiTexture* texture;
+static GLuint* texture;
+static bool readOnce;
+static bool harinezumi;
+struct normalList {
+	aiVector3D normalVec;
+	aiVector3D pos;
+};
+
+static std::vector<normalList> _Normallist;
 /*------------------------------------------------------------------------------
    関数定義
 ------------------------------------------------------------------------------*/
@@ -163,7 +173,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         // ゲームの初期化に失敗した
 		return -1;
 	}
-
+	readOnce = false;
 
 	xPos = 0.0f;
 	yPos = 0.0f;
@@ -294,7 +304,12 @@ bool Initialize(void)
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, matShi);
 	glEnable(GL_FRONT_AND_BACK);
 	
-	g_pScene = aiImportFile("asset/model/Pronama-chan_Ver3/FBX(Ver.3)/PronamaChan.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+//g_pScene = aiImportFile("asset/model/Pronama-chan_Ver3/FBX(Ver.3)/PronamaChan.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/test.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/AC Cobra/Shelby.obj", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/tank/tank.x", aiProcessPreset_TargetRealtime_MaxQuality);
+	//g_pScene = aiImportFile("asset/model/coaster.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
+	g_pScene = aiImportFile("asset/model/dragon/Dragon 2.5_fbx.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
 	
 	if (g_pScene == nullptr) {
 		MessageBox(g_hWnd, "モデルファイルが読み込めません", "Assimp", MB_OK | MB_ICONHAND);
@@ -302,23 +317,22 @@ bool Initialize(void)
 	}
 
 	int material = g_pScene->mNumMaterials;
-	texture = new aiTexture[material];
+	texture = new GLuint[material];
 
 	for (int i = 0; i < material; i++) {
 		aiString path;
-		if (AI_SUCCESS(g_pScene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &path))) {
-			// マテリアルに画像がある
-			
-			std::string texPath = path.data;
-			size_t pos = texPath.find_last_of("\\/");
-			std::string headerPath = texPath.substr(0, pos + 1);
-			headerPath += path.data;
-			texPath.c_str();	// stringの先頭アドレスを取得できる
-			texture[i];
-			LoadTexture(headerPath.c_str(), 2);
-		}
-	}
+		
 
+		g_pScene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &path);
+		// マテリアルに画像がある
+		std::string texPath = path.data;
+		size_t pos = texPath.find_last_of("\\/");
+		std::string headerPath = texPath.substr(0, pos + 1);
+		headerPath += path.data;
+		texPath.c_str();	// stringの先頭アドレスを取得できる
+		texture[i] = LoadTexture(headerPath.c_str(), 2);
+	}
+	
 	/*
 		unorderedmap
 	
@@ -331,13 +345,15 @@ bool Initialize(void)
 	Texture = LoadTexture("asset/texture/BG_Space.jpg",FILETYPE_JPEG);
 	Texture2 = LoadTexture("asset/texture/wall.tga", FILETYPE_TGA);
 	Texture3 = LoadTexture("asset/texture/dice.tga", FILETYPE_TGA);
+	CInput::Init();
+	harinezumi = false;
     return true;
 }
 
 // ゲームの更新関数
 void Update(void)
 {
-
+	CInput::Update();
 	// フレームカウントの更新
 	g_FrameCount++;
 
@@ -357,6 +373,13 @@ void Update(void)
 
 	CameraEye['Y'] += 0.0f;
 	
+
+	if (CInput::GetKeyTrigger('N')) {
+		if (harinezumi) {
+			harinezumi = false;
+		}
+		else harinezumi = true;
+	}
 
 	count++;
 }
@@ -440,25 +463,17 @@ void Draw(void)
 	glLoadIdentity();
 
 
-	gluLookAt(0.0f, 7.0f, 7.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	gluLookAt(0.0f,50.0f, 50.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.7f, -0.7f);
 
 
 	
 
 
-	DrawMesh(g_pScene);
-	
-
-
-	// 行列の面倒
-	
-	// メッシュの面倒
-
-	// マテリアルの面倒
 	
 	
 
 
+	
 
 
 
@@ -571,6 +586,37 @@ void Draw(void)
 	glPopMatrix();
 
 
+	// 行列の面倒
+
+	// メッシュの面倒
+
+	// マテリアルの面倒
+
+
+
+	DrawMesh(g_pScene);
+	
+	
+	// ハリネズミ
+	if (harinezumi) {
+
+		glPushMatrix();
+		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+		glBegin(GL_LINES);
+		for (normalList nrm : _Normallist) {
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+			glNormal3f(0.0f, 0.0f, 1.0f);
+			glVertex3f(nrm.pos.x, nrm.pos.y, nrm.pos.z);
+
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+			glNormal3f(0.0f, 0.0f, 1.0f);
+			glVertex3f(nrm.pos.x + nrm.normalVec.x * 3.0f, nrm.pos.y + nrm.normalVec.y * 3.0f, nrm.pos.z + nrm.normalVec.z * 3.0f);
+		}
+		glEnd();
+		glPopMatrix();
+
+	}
+
 	glBindTexture(GL_TEXTURE_2D, 0);
 	//glEnable(GL_LIGHT0);
 
@@ -581,6 +627,7 @@ void Draw(void)
 // ゲームの終了処理
 void Finalize(void)
 {
+	CInput::Uninit();
 	if (g_pScene != nullptr) {
 		aiReleaseImport(g_pScene);
 	}
@@ -684,55 +731,93 @@ void DrawCube(void) {
 void DrawMesh(const aiScene* pScene) {
 	void DrawChildrens(aiNode* pNode, const aiScene* pScene);
 
-	
-
 	aiNode* pNode = g_pScene->mRootNode;			// ルートノード（一番上の親パーツ）を取ってくる
-	aiMatrix4x4 matrix = pNode->mTransformation;	// 行列（位置）を取ってくる
-	aiTransposeMatrix4(&matrix);					// 行列を転置する(DirectX(左手系)->openGL(右手系))
 	glPushMatrix();
+	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+	//glScalef(1.0f, 3.0f, 1.0f);
+	//glRotatef(270.0f, 0.0f, 1.0f, 0.0f);
+	//glTranslatef(0.0f, 3.0f, 3.0f);
 	
-	glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-
-	glMultMatrixf((float*)&matrix);					// 行列をfloatに
-
 
 	glBegin(GL_TRIANGLES);
 	
+
 	DrawChildrens(pNode,pScene);
 
 	glEnd();
-	
+	aiMatrix4x4 matrix = pNode->mTransformation;	// 行列（位置）を取ってくる
+	aiTransposeMatrix4(&matrix);					// 行列を転置する(DirectX(左手系)->openGL(右手系))
+	glMultMatrixf((float*)&matrix);					// 行列をfloatに
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matCol);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDif);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, matShi);
 	glPopMatrix();
+	readOnce = true;
 }
 
 void DrawChildrens(aiNode* pNode, const aiScene* g_pScene) {
+	glPushMatrix();
 	aiMatrix4x4 matrix = pNode->mTransformation;	// 行列（位置）を取ってくる
 	aiTransposeMatrix4(&matrix);					// 行列を転置する(DirectX(左手系)->openGL(右手系))
-	glPushMatrix();
+	
 	glMultMatrixf((float*)&matrix);					// 行列をfloatに
 	for (int n = 0; n < pNode->mNumChildren; n++) {
 		DrawChildrens(pNode->mChildren[n], g_pScene);
 	}
 	for (int n = 0; n < pNode->mNumMeshes; n++) {
 		const aiMesh* pMesh = g_pScene->mMeshes[pNode->mMeshes[n]];
+		const aiMaterial* mat = g_pScene->mMaterials[pMesh->mMaterialIndex];
+
+		glBindTexture(GL_TEXTURE_2D, texture[pMesh->mMaterialIndex]);
+		aiColor4D diffuse;
+		
+		aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE, &diffuse);
+		GLfloat glDiffuse[] = { diffuse.r,diffuse.g,diffuse.b,diffuse.a };
+		
+		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, (float*)glDiffuse);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, (float*)glDiffuse);
+		
+
+
 		for (int fn = 0; fn < pMesh->mNumFaces; fn++) {
 			const aiFace* pFace = &pMesh->mFaces[fn];
 			for (int i = 0; i < pFace->mNumIndices; i++) {
 				int index = pFace->mIndices[i];
-				glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+				
+				
+
+				glColor4f(glDiffuse[0],glDiffuse[1],glDiffuse[2],glDiffuse[3]);
 				glNormal3f(pMesh->mNormals[index].x, pMesh->mNormals[index].y, pMesh->mNormals[index].z);
+				
+				
 				if (pMesh->HasTextureCoords(0)) {
 					glTexCoord2f(pMesh->mTextureCoords[0][index].x, pMesh->mTextureCoords[0][index].y);	// １頂点に複数のtexcoordを持っているなら、forで回す
 				}
 
 				glVertex3f(pMesh->mVertices[index].x, pMesh->mVertices[index].y, pMesh->mVertices[index].z);
+				
+
+				if (!readOnce) {
+
+					normalList pushlist = {
+					aiVector3D({ pMesh->mNormals[index].x, pMesh->mNormals[index].y, pMesh->mNormals[index].z }),
+					aiVector3D({pMesh->mVertices[index].x, pMesh->mVertices[index].y, pMesh->mVertices[index].z})
+
+					};
+					_Normallist.push_back(pushlist);
+				}
+				
 			}
 		}
 
 	}
 	glPopMatrix();
 }
+/*
+	マテリアル情報はaiSceneのaiMeshごと
 
+*/
 
 
 
