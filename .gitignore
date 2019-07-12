@@ -9,6 +9,7 @@
 *.userosscache
 *.sln.docstates
 Assimp
+stb-master
 asset/model
 asset/texture
 
