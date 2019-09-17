@@ -17,6 +17,11 @@
 #define SCREEN_HEIGHT  (576) // スクリーン(クライアント領域)の高さ
 
 
+
+
+
+
+
 #endif // COMMON_H_
 
 

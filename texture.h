@@ -24,6 +24,7 @@ enum FILETYPE {
 
 
 unsigned int LoadTexture(const char* filename, unsigned int e_FILETYPE);
+unsigned int LoadTextureFromMemory(const unsigned char* pData, int Len);
 void DeleteTexture(void);
 
 #endif

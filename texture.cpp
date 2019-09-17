@@ -257,6 +257,48 @@ unsigned int LoadTexture(const char * filename, unsigned int e_FILETYPE)
 
 }
 
+// FBX内にデータとして埋め込まれている画像を読み込む関数
+unsigned int LoadTextureFromMemory(const unsigned char* pData, int len) {
+	
+	// 第１引数：メモリ上の画像の先頭アドレス
+	// 第２引数：画像のメモリサイズ
+	unsigned char* pImage;
+
+
+	// pngファイル
+	
+	int width;
+	int height;
+	int bpp;
+	pImage = stbi_load_from_memory(pData, len, &width, &height, &bpp, STBI_rgb_alpha);
+
+	//　テクスチャ生成
+	glGenTextures(1, &texture[count]);
+	glBindTexture(GL_TEXTURE_2D, texture[count]);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	//　くりかえし、サンプラーステート
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);	//　OpenGLでは、UV座標ではなく、ST座標。
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	//　この関数は、ターゲット、何を設定する？、設定したい値の順
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	if (bpp == 4) {
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pImage);
+	}
+	else {
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, pImage);
+	}
+
+	stbi_image_free(pImage);
+
+	glBindTexture(GL_TEXTURE_2D, NULL);	//　アンバインドする
+	
+
+
+	count++;
+	return texture[count - 1];
+}
+
+
+
 void DeleteTexture(void){
 	glDeleteTextures(count, &texture[count]);
 }
