@@ -312,7 +312,7 @@ bool Initialize(void)
 	
 	
 	
-	Samba.Init("asset/model/Walking3.fbx");
+	Samba.Init("asset/model/SambaDancing2.fbx");
 	
 
 
@@ -463,7 +463,7 @@ void Draw(void)
 	glLoadIdentity();
 
 
-	gluLookAt(0.0f,300.0f, 200.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.7f, -0.7f);
+	gluLookAt(0.0f,300.0f, 300.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.7f, -0.7f);
 
 	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matCol);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDif);
