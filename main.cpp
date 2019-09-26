@@ -14,12 +14,13 @@ GameProject18を元にFPS計測とフレーム固定を導入する
 #include <map>
 #include <vector>
 #include <unordered_map>
+#include "resource.h"
+#include "FileDialog.h"
 #include "common.h"
 #include "system_timer.h"
 #include "texture.h"
 #include "CModel.h"
 #include "input.h"
-
 
 
 
@@ -97,7 +98,7 @@ static float canonFront = 0.0f;
 static float bodyFront = 0.0f;
 static int frame = 0;
 static CModel Samba;
-
+CModel* currentModel = nullptr;
 
 // std::vector<BONE> g_Bone;
 
@@ -118,6 +119,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	// ウィンドウクラス構造体の設定
 	WNDCLASS wc = {};
 	wc.lpfnWndProc = WndProc;                          // ウィンドウプロシージャの指定
+	wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);	   // メニューバーを登録
 	wc.lpszClassName = CLASS_NAME;                     // クラス名の設定
 	wc.hInstance = hInstance;                          // インスタンスハンドルの指定
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);          // マウスカーソルを指定
@@ -163,6 +165,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		hInstance,      // インスタンスハンドル
 		NULL            // 追加のアプリケーションデータ
 	);
+
+	
 
 	if( g_hWnd == NULL ) {
 		// ウィンドウハンドルが何らかの理由で生成出来なかった
@@ -226,6 +230,32 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch( uMsg ) {
+
+		
+
+
+		case WM_COMMAND: {
+			switch (LOWORD(wParam)) {
+				case ID_40001: {
+					// FBXを開く
+					FileDialog* dialog = new FileDialog;
+					const char* filename = dialog->Init(hWnd);
+					if (filename != '\0') {
+						if (currentModel) {
+							currentModel->Uninit();
+							delete currentModel;
+							currentModel = nullptr;
+						}
+						DeleteTexture();
+						currentModel = new CModel;
+						currentModel->Init(filename);
+					}
+					delete dialog;
+					break;
+				}
+			} // switch(LOWORD(wParam))
+		} // case WM_COMMAND
+
 		case WM_KEYDOWN:
 			if( wParam == VK_ESCAPE ) {
 				SendMessage(hWnd, WM_CLOSE, 0, 0); // WM_CLOSEメッセージの送信
@@ -312,7 +342,7 @@ bool Initialize(void)
 	
 	
 	
-	Samba.Init("asset/model/SambaDancing2.fbx");
+	//Samba.Init("asset/model/SambaDancing2.fbx");
 	
 
 
@@ -354,8 +384,10 @@ void Update(void)
 
 	CameraEye['Y'] += 0.0f;
 	
-	Samba.Update();
-	
+	//Samba.Update();
+	if (currentModel) {
+		currentModel->Update();
+	}
 	
 	if (CInput::GetKeyTrigger('N')) {
 		if (harinezumi) {
@@ -597,7 +629,11 @@ void Draw(void)
 	//glScalef(0.01f, 0.01f, 0.01f);
 	//glTranslatef(0.0f, 100.0f, 200.0f);
 	//DrawChildrens(g_pScene->mRootNode);
-	Samba.Draw();
+	//Samba.Draw();
+	if (currentModel) {
+		glBindTexture(GL_TEXTURE_2D, 0);
+		currentModel->Draw();
+	}
 	glPopMatrix();
 	/*
 	// ハリネズミ
@@ -634,7 +670,10 @@ void Finalize(void)
 {
 	CInput::Uninit();
 	g_Angle.clear();
-	Samba.Uninit();
+	//Samba.Uninit();
+	if (currentModel) {
+		currentModel->Uninit();
+	}
 	// OpenGLの後かたずけ
 	DeleteTexture();
 	wglMakeCurrent(NULL, NULL);

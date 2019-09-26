@@ -6,7 +6,7 @@
 
 
 
-static unsigned int texture[3];	// 2ŒÂˆÈãŠÇ—‚µ‚½‚¢ê‡‚Í”z—ñ‚É‚·‚é
+static unsigned int texture[10];	// 2ŒÂˆÈãŠÇ—‚µ‚½‚¢ê‡‚Í”z—ñ‚É‚·‚é
 static unsigned int count = 0;
 
 
@@ -301,6 +301,7 @@ unsigned int LoadTextureFromMemory(const unsigned char* pData, int len) {
 
 void DeleteTexture(void){
 	glDeleteTextures(count, &texture[count]);
+	count = 0;
 }
 
 
