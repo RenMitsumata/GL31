@@ -295,7 +295,7 @@ void CModel::Draw(void)
 	//glTranslatef(0.0f, 3.0f, 3.0f);
 
 
-
+	
 
 
 	DrawChildrens(pNode);
@@ -361,7 +361,7 @@ void CModel::DrawChildrens(aiNode* pNode) {
 
 
 	for (int n = 0; n < pNode->mNumMeshes; n++) {
-		glBindTexture(GL_TEXTURE_2D, texture);
+		
 		unsigned int m = pNode->mMeshes[n];
 
 		const aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[n]];
@@ -384,7 +384,11 @@ void CModel::DrawChildrens(aiNode* pNode) {
 
 		std::vector<DEFORM_VERTEX>* pVertices = &pDeformVertexs[m];
 
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+
 		glBegin(GL_TRIANGLES);
+
 
 		for (int t = 0; t < pMesh->mNumFaces; t++) {
 
